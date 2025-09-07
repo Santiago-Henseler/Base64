@@ -133,7 +133,7 @@ void helpOptions(){
 int main(int argc, char* argv[]){
 
     if(argc < 2){
-        printf("\033[1;31mSintax error\033[0m: write ./base64 -h for more help\n");
+        printf("\033[1;31mSyntax error\033[0m: write ./base64 -h for more help\n");
         return -1;
     }
 
