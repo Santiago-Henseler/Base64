@@ -149,26 +149,26 @@ int main(int argc, char* argv[]){
             helpOptions();
             return 0;
         }
-        if(strcmp(argv[i], "-e") == 0){
+	else if(strcmp(argv[i], "-e") == 0){
             if(fnc != NULL)
                 return syntax_error("you can only select encode or decode");
             fnc = encode;
         }
-        if(strcmp(argv[i], "-i") == 0){
-            if(argc > i+1)
+	else if(strcmp(argv[i], "-i") == 0){
+            if(i+1 >= argc)
 	        return syntax_error("the file name is not indicated");
 
             fdIn = open(argv[i+1], O_RDONLY);
             if(fdIn == -1)
                 return syntax_error("the file could  not be opened");
         }
-        if(strcmp(argv[i], "-d") == 0){
+	else if(strcmp(argv[i], "-d") == 0){
             if(fnc != NULL)
                 return syntax_error("./base64 -h for more help");
             fnc = encode;
         }
-        if(strcmp(argv[i], "-o") == 0){
-            if(argc > i+1)
+	else if(strcmp(argv[i], "-o") == 0){
+            if(i+1 >= argc)
 		return syntax_error("the file name is not indicated");
             
             fdOut = open(argv[i+1], O_CREAT | O_WRONLY);
