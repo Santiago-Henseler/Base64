@@ -4,13 +4,11 @@
 #include <math.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #define MASK2BITS 0x03 // 00000011
 #define MASK4BITS 0x0F // 00001111
 #define MASK6BITS 0x3F // 00111111
-
-#define STDIN 0
-#define STDOUT 1
 
 const char BASE64[64] = {
     'A','B','C','D','E','F','G','H',
@@ -23,11 +21,11 @@ const char BASE64[64] = {
     '4','5','6','7','8','9','+','/'
 };
 
-char * encode(char * input){
+char * encode(char * input, int len){
 
     char * output = malloc(sizeof(char));
 
-    int packs = (int)(floor(strlen(input) / 3) * 3);
+    int packs = (int)(floor(len / 3) * 3);
     int i;
     for(i = 0; i < packs; i += 3){
 
@@ -92,12 +90,12 @@ int base64Position(char code){
     return position;
 }
 
-char * decode(char * input){
+char * decode(char * input, int len){
 
     char * output = malloc(sizeof(char));
 
     int i;
-    for(i = 0; i < strlen(input); i += 4){
+    for(i = 0; i < len; i += 4){
         output = realloc(output, 3*sizeof(char));
         int len = strlen(output);
 
@@ -130,6 +128,28 @@ void helpOptions(){
         printf("    -h --help Print this message and quit\n");
 }
 
+void operate(char * (*fnc)(char*, int)){
+
+    size_t bufsize = 1024;
+    size_t len = 0;
+    char *buffer = malloc(bufsize);
+
+    int c;
+    while ((c = getchar()) != EOF) {
+        if (c == '\0') break;
+
+        buffer[len++] = (char)c;
+
+        if (len >= bufsize) {
+            bufsize *= 2;
+            char *buffer = realloc(buffer, bufsize);
+        }
+    }
+    buffer[len] = '\0';
+
+    printf("%s", fnc(buffer, len));
+}
+
 int main(int argc, char* argv[]){
 
     if(argc < 2){
@@ -137,9 +157,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
-    char *(*fnc)(char *) = NULL;
-    int fdIn = STDIN;
-    int fdOut = STDOUT;
+    char *(*fnc)(char *, int) = NULL;
 
     for(int i = 1; i < argc; i++){
         if(strcmp(argv[i], "-h") == 0){
@@ -154,37 +172,30 @@ int main(int argc, char* argv[]){
             fnc = encode;
         }
         if(strcmp(argv[i], "-i") == 0){
-            if(argc > i+1){
+            if(argc < i+1){
                 printf("\033[1;31mSintax error\033[0m: the file name is not indicated\n");
                 return -1;
             }
-
-            fdIn = open(argv[i+1], O_RDONLY);
-            if(fdIn == -1){
-                printf("\033[1;31mSintax error\033[0m: the file could not be opened\n");
-                return -1;
-            }
+            dup2(open(argv[i+1], O_RDONLY), STDIN_FILENO);
         }
         if(strcmp(argv[i], "-d") == 0){
             if(fnc != NULL){
                 printf("\033[1;31mSintax error\033[0m: write ./base64 -h for more help\n");
                 return -1;
             }
-            fnc = encode;
+            fnc = decode;
         }
         if(strcmp(argv[i], "-o") == 0){
-            if(argc > i+1){
+            if(argc < i+1){
                 printf("\033[1;31mSintax error\033[0m: the file name is not indicated\n");
                 return -1;
             }
             
-            fdOut = open(argv[i+1], O_CREAT | O_WRONLY);
-            if(fdOut == -1){
-                printf("\033[1;31mSintax error\033[0m: the file could not be opened\n");
-                return -1;
-            }
+            dup2(open(argv[i+1], O_CREAT | O_WRONLY, 0644), STDOUT_FILENO);
         }
     }
+
+    operate(fnc);
 
     return 0;
 }
