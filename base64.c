@@ -130,12 +130,15 @@ void helpOptions(){
         printf("    -h --help Print this message and quit\n");
 }
 
+int syntax_error(char* msg) {
+        printf("\033[1;31mSyntax error\033[0m: %s\n",msg);
+        return -1;	
+}
+
 int main(int argc, char* argv[]){
 
-    if(argc < 2){
-        printf("\033[1;31mSyntax error\033[0m: write ./base64 -h for more help\n");
-        return -1;
-    }
+    if(argc < 2)
+        return syntax_error("./base64 -h for more help");
 
     char *(*fnc)(char *) = NULL;
     int fdIn = STDIN;
@@ -147,43 +150,31 @@ int main(int argc, char* argv[]){
             return 0;
         }
         if(strcmp(argv[i], "-e") == 0){
-            if(fnc != NULL){
-                printf("\033[1;31mSintax error\033[0m: you can only\n");
-                return -1;
-            }
+            if(fnc != NULL)
+                return syntax_error("you can only select encode or decode");
             fnc = encode;
         }
         if(strcmp(argv[i], "-i") == 0){
-            if(argc > i+1){
-                printf("\033[1;31mSintax error\033[0m: the file name is not indicated\n");
-                return -1;
-            }
+            if(argc > i+1)
+	        return syntax_error("the file name is not indicated");
 
             fdIn = open(argv[i+1], O_RDONLY);
-            if(fdIn == -1){
-                printf("\033[1;31mSintax error\033[0m: the file could not be opened\n");
-                return -1;
-            }
+            if(fdIn == -1)
+                return syntax_error("the file could  not be opened");
         }
         if(strcmp(argv[i], "-d") == 0){
-            if(fnc != NULL){
-                printf("\033[1;31mSintax error\033[0m: write ./base64 -h for more help\n");
-                return -1;
-            }
+            if(fnc != NULL)
+                return syntax_error("./base64 -h for more help");
             fnc = encode;
         }
         if(strcmp(argv[i], "-o") == 0){
-            if(argc > i+1){
-                printf("\033[1;31mSintax error\033[0m: the file name is not indicated\n");
-                return -1;
-            }
+            if(argc > i+1)
+		return syntax_error("the file name is not indicated");
             
             fdOut = open(argv[i+1], O_CREAT | O_WRONLY);
-            if(fdOut == -1){
-                printf("\033[1;31mSintax error\033[0m: the file could not be opened\n");
-                return -1;
+            if(fdOut == -1)
+		return syntax_error("the file could not be opened");
             }
-        }
     }
 
     return 0;
