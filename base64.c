@@ -25,9 +25,8 @@ char * encode(char * input, int len){
 
     char * output = malloc(sizeof(char));
 
-    int packs = (int)(floor(len / 3) * 3);
     int i;
-    for(i = 0; i < packs; i += 3){
+    for(i = 0; i < (floor(len / 3) * 3); i += 3){
 
         output = realloc(output, 4*sizeof(char));
         int len = strlen(output);
@@ -50,7 +49,7 @@ char * encode(char * input, int len){
         output[len+3] = BASE64[input[i+2] & MASK6BITS];
     }
 
-    if(strlen(input) - i == 1){
+    if(len - i == 1){
         output = realloc(output, 4*sizeof(char));
         int len = strlen(output);
 
@@ -59,7 +58,7 @@ char * encode(char * input, int len){
         output[len+1] = BASE64[(input[i] & MASK2BITS) << 4];
         output[len+2] = '=';
         output[len+3] = '=';
-    }else if(strlen(input) - i == 2){
+    }else if(len - i == 2){
         output = realloc(output, 4*sizeof(char));
         int len = strlen(output);
 
@@ -118,16 +117,6 @@ char * decode(char * input, int len){
     return output;
 }
 
-void helpOptions(){
-    printf("./base64 [OPTIONS]\n");
-        printf("    -e --encode Encodes to Base64\n");
-        printf("    -d --decode Decodes from Base64\n");
-        printf("    -i --input file Reads from file or stdin\n");
-        printf("    -o --output file Writes to file or stdout\n");
-        printf("    -v --version Show version string\n");
-        printf("    -h --help Print this message and quit\n");
-}
-
 void operate(char * (*fnc)(char*, int)){
 
     size_t bufsize = 1024;
@@ -148,6 +137,16 @@ void operate(char * (*fnc)(char*, int)){
     buffer[len] = '\0';
 
     printf("%s", fnc(buffer, len));
+}
+
+void helpOptions(){
+    printf("./base64 [OPTIONS]\n");
+        printf("    -e --encode Encodes to Base64\n");
+        printf("    -d --decode Decodes from Base64\n");
+        printf("    -i --input file Reads from file or stdin\n");
+        printf("    -o --output file Writes to file or stdout\n");
+        printf("    -v --version Show version string\n");
+        printf("    -h --help Print this message and quit\n");
 }
 
 int main(int argc, char* argv[]){
@@ -193,6 +192,11 @@ int main(int argc, char* argv[]){
             
             dup2(open(argv[i+1], O_CREAT | O_WRONLY, 0644), STDOUT_FILENO);
         }
+    }
+
+    if(fnc == NULL){
+        printf("\033[1;31mSintax error\033[0m: write ./base64 -h for more help\n");
+        return -1;
     }
 
     operate(fnc);
