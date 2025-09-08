@@ -6,6 +6,6 @@ clean:
 	rm -rf base64
 
 normal: 
-	gcc $(CFLAGS) base64.c -o base64 -lm
+	gcc $(CFLAGS) base64.c -o base64
 
 
