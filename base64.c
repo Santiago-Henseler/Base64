@@ -3,43 +3,29 @@
 #define STDIN 0
 #define STDOUT 1
 
-const char BASE64[64] = {
-    'A','B','C','D','E','F','G','H',
-    'I','J','K','L','M','N','O','P',
-    'Q','R','S','T','U','V','W','X',
-    'Y','Z','a','b','c','d','e','f',
-    'g','h','i','j','k','l','m','n',
-    'o','p','q','r','s','t','u','v',
-    'w','x','y','z','0','1','2','3',
-    '4','5','6','7','8','9','+','/'
-};
+const char BASE64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; 
 
-const char ENTER = '\n';
+const unsigned int MASK1 = 0x00FC0000;
+const unsigned int MASK2 = 0x003F0000;
+const unsigned int MASK3 = 0x0000FC00;
+const unsigned int MASK4 = 0x0000003F;
+
+int buf_in;
+char buf_out[4];
+
+void toBase64(int len) {
+	buf_out[0] = BASE64[ ( buf_in & MASK1 ) >> 18 ];
+	buf_out[1] = BASE64[ ( buf_in & MASK2 ) >> 12 ];
+	buf_out[2] = (len > 1)? BASE64[ ( buf_in & MASK3 ) >>  6 ]: '='; 
+	buf_out[3] = (len > 2)? BASE64[ ( buf_in & MASK4 )       ]: '=';
+}
 
 int main(int argc, char* argv[]){
-    unsigned char new_byte = 0x00;
-    unsigned char tmp = 0x00;
-
-    unsigned int i = 1;
-    unsigned int acc = 0;
+	int len;
+	while ( (len = read(STDIN,&buf_in,3) ) ) {
+		toBase64(len);		
+		write(STDOUT,&buf_out,4);				
+	}
     
-    read(STDIN,&new_byte,1);
-    while ( new_byte != 0x0A ) {         
-        write(STDOUT,&BASE64[(new_byte >> 2*i) + acc],1);
-
-        tmp = (new_byte << 2*(4-i));  
-        acc = tmp >> 2;
-
-        i++;
-        if (i == 4){
-            write(STDOUT,&BASE64[acc],1);
-            i = 1;        
-            acc = 0;
-        }
-        read(STDIN,&new_byte,1);
-    }
-    write(STDOUT,&ENTER,1);
-
-    
-    return 0;
+	return 0;
 }
