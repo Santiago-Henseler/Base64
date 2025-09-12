@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <stdbool.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -21,61 +20,46 @@ const char BASE64[64] = {
     '4','5','6','7','8','9','+','/'
 };
 
-char * encode(char * input, int len){
+void encode(char input[3], int len){
 
-    char * output = malloc(sizeof(char));
-
-    int i;
-    for(i = 0; i < (floor(len / 3) * 3); i += 3){
-
-        output = realloc(output, 4*sizeof(char));
-        int len = strlen(output);
-
-        output[len] = BASE64[input[i] >> 2];
-
-        // Agarro los 2 ultimos bits del primer octeto
-        char lastBits1 = (input[i] & MASK2BITS) << 6; 
+    char output[4];
+    
+    if(len == 3){
+        output[0] = BASE64[input[0] >> 2];
+         // Agarro los 2 ultimos bits del primer octeto
+        char lastBits1 = (input[0] & MASK2BITS) << 6; 
         // Agrego los 2 ultimos bits al principio del segundo octeto
-        char arg1 = ((input[i+1] >> 2) | lastBits1); 
-        output[len+1] = BASE64[arg1 >> 2];
-
+        char arg1 = ((input[1] >> 2) | lastBits1); 
+        output[1] = BASE64[arg1 >> 2];
         // Agarro los 4 ultimos bits del segundo octeto
-        char lastBits2 = (input[i+1] & MASK4BITS) << 4; 
+        char lastBits2 = (input[1] & MASK4BITS) << 4; 
         // Agrego los 4 ultimos bits al principio del tercer octeto
-        char arg2 = ((input[i+2] >> 4) | lastBits2); 
-        output[len+2] = BASE64[arg2 >> 2];
+        char arg2 = ((input[2] >> 4) | lastBits2); 
+        output[2] = BASE64[arg2 >> 2];
 
         // Elimino los primeros 2 bits del tercer octeto
-        output[len+3] = BASE64[input[i+2] & MASK6BITS];
-    }
-
-    if(len - i == 1){
-        output = realloc(output, 4*sizeof(char));
-        int len = strlen(output);
-
-        output[len] = BASE64[input[i] >> 2];
-        // Agarro los 2 ultimos bits del primer octeto
-        output[len+1] = BASE64[(input[i] & MASK2BITS) << 4];
-        output[len+2] = '=';
-        output[len+3] = '=';
-    }else if(len - i == 2){
-        output = realloc(output, 4*sizeof(char));
-        int len = strlen(output);
-
-        output[len] = BASE64[input[i] >> 2];
+        output[3] = BASE64[input[2] & MASK6BITS];
+    }else if(len == 2){
+        output[0] = BASE64[input[0] >> 2];
 
         // Agarro los 2 ultimos bits del primer octeto
-        char lastBits = (input[i] & MASK2BITS) << 6; 
+        char lastBits = (input[0] & MASK2BITS) << 6; 
         // Agrego los 2 ultimos bits al principio del segundo octeto
-        char arg = ((input[i+1] >> 2) | lastBits); 
-        output[len+1] = BASE64[arg >> 2];
+        char arg = ((input[1] >> 2) | lastBits); 
+        output[1] = BASE64[arg >> 2];
 
         // Agarro los 2 ultimos bits del segundo octeto y los desplazo
-        output[len+2] = BASE64[(input[i+1] & MASK2BITS) << 2];
-        output[len+3] = '=';
+        output[2] = BASE64[(input[1] & MASK2BITS) << 2];
+        output[3] = '=';
+    }else{
+        output[0] = BASE64[input[0] >> 2];
+        // Agarro los 2 ultimos bits del primer octeto
+        output[1] = BASE64[(input[0] & MASK2BITS) << 4];
+        output[2] = '=';
+        output[3] = '=';
     }
 
-    return output;
+    printf("%s", output);
 }
 
 int base64Position(char code){
@@ -89,54 +73,39 @@ int base64Position(char code){
     return position;
 }
 
-char * decode(char * input, int len){
+void decode(char input[4]){
 
-    char * output = malloc(sizeof(char));
+    char output[3] = {0,0,0};
 
-    int i;
-    for(i = 0; i < len; i += 4){
-        output = realloc(output, 3*sizeof(char));
-        int len = strlen(output);
-
-        int letter1 = base64Position(input[i+3]); 
-        int letter2 = base64Position(input[i+2]); 
-        int letter3 = base64Position(input[i+1]); 
-        int letter4 = base64Position(input[i]); 
-
-        output[len] = (letter4 << 2) | (letter3 >> 4);
+    int letter1 = base64Position(input[0]); 
+    int letter2 = base64Position(input[1]); 
+    int letter3 = base64Position(input[2]); 
+    int letter4 = base64Position(input[3]); 
+    
+    output[0] = (letter1 << 2) | (letter2 >> 4);
         
-        if(letter2 != -1){
-           output[len+1] = ((letter3 & MASK4BITS) << 4) | (letter2 >> 2);
-        }
-        if(letter1 != -1){
-            output[len+2] =  ((letter2 & MASK2BITS) << 6) | letter1;
-        }
-        
+    if(letter3 != -1){ 
+        output[1] = ((letter2 & MASK4BITS) << 4) | (letter3 >> 2);
+    }
+    if(letter4 != -1){
+        output[2] =  ((letter3 & MASK2BITS) << 6) | letter4;
     }
 
-    return output;
+    printf("%s", output);
 }
 
-void operate(char * (*fnc)(char*, int)){
+void operate(bool encod){
 
-    size_t bufsize = 1024;
-    size_t len = 0;
-    char *buffer = malloc(bufsize);
+    char buff[encod?3:4];
+    int len;
 
-    int c;
-    while ((c = getchar()) != EOF) {
-        if (c == '\0') break;
-
-        buffer[len++] = (char)c;
-
-        if (len >= bufsize) {
-            bufsize *= 2;
-            char *buffer = realloc(buffer, bufsize);
+    while((len = read(STDIN_FILENO, &buff, encod?3:4))){
+        if(encod){
+            encode(buff, len);
+        }else{
+            decode(buff);
         }
     }
-    buffer[len] = '\0';
-
-    printf("%s", fnc(buffer, len));
 }
 
 void helpOptions(){
@@ -152,11 +121,11 @@ void helpOptions(){
 int main(int argc, char* argv[]){
 
     if(argc < 2){
-        printf("\033[1;31mSintax error\033[0m: write ./base64 -h for more help\n");
+        perror("\033[1;31mSyntax error\033[0m: write ./base64 -h for more help\n");
         return -1;
     }
 
-    char *(*fnc)(char *, int) = NULL;
+    bool encode = true;
 
     for(int i = 1; i < argc; i++){
         if(strcmp(argv[i], "-h") == 0){
@@ -164,29 +133,21 @@ int main(int argc, char* argv[]){
             return 0;
         }
         if(strcmp(argv[i], "-e") == 0){
-            if(fnc != NULL){
-                printf("\033[1;31mSintax error\033[0m: you can only\n");
-                return -1;
-            }
-            fnc = encode;
+            encode = true;
+        }
+        if(strcmp(argv[i], "-d") == 0){
+            encode = false;
         }
         if(strcmp(argv[i], "-i") == 0){
             if(argc < i+1){
-                printf("\033[1;31mSintax error\033[0m: the file name is not indicated\n");
+                perror("\033[1;31mSyntax error\033[0m: the file name is not indicated\n");
                 return -1;
             }
             dup2(open(argv[i+1], O_RDONLY), STDIN_FILENO);
         }
-        if(strcmp(argv[i], "-d") == 0){
-            if(fnc != NULL){
-                printf("\033[1;31mSintax error\033[0m: write ./base64 -h for more help\n");
-                return -1;
-            }
-            fnc = decode;
-        }
         if(strcmp(argv[i], "-o") == 0){
             if(argc < i+1){
-                printf("\033[1;31mSintax error\033[0m: the file name is not indicated\n");
+                perror("\033[1;31mSyntax error\033[0m: the file name is not indicated\n");
                 return -1;
             }
             
@@ -194,12 +155,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-    if(fnc == NULL){
-        printf("\033[1;31mSintax error\033[0m: write ./base64 -h for more help\n");
-        return -1;
-    }
-
-    operate(fnc);
+    operate(encode);
 
     return 0;
 }
