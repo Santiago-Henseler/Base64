@@ -20,13 +20,12 @@ const char BASE64[64] = {
     '4','5','6','7','8','9','+','/'
 };
 
-void encode(char input[3], int len){
-
-    char output[4];
+void encode(char input[3], char* output, int len){
+    output[0] = BASE64[input[0] >> 2];                        // Elimino los ultimos 2 bits del primer octeto
+    output[3] = (len>2) ? BASE64[input[2] & MASK6BITS] : '='; // Elimino los primeros 2 bits del tercer octeto
     
     if(len == 3){
-        output[0] = BASE64[input[0] >> 2];
-         // Agarro los 2 ultimos bits del primer octeto
+        // Agarro los 2 ultimos bits del primer octeto
         char lastBits1 = (input[0] & MASK2BITS) << 6; 
         // Agrego los 2 ultimos bits al principio del segundo octeto
         char arg1 = ((input[1] >> 2) | lastBits1); 
@@ -36,12 +35,7 @@ void encode(char input[3], int len){
         // Agrego los 4 ultimos bits al principio del tercer octeto
         char arg2 = ((input[2] >> 4) | lastBits2); 
         output[2] = BASE64[arg2 >> 2];
-
-        // Elimino los primeros 2 bits del tercer octeto
-        output[3] = BASE64[input[2] & MASK6BITS];
     }else if(len == 2){
-        output[0] = BASE64[input[0] >> 2];
-
         // Agarro los 2 ultimos bits del primer octeto
         char lastBits = (input[0] & MASK2BITS) << 6; 
         // Agrego los 2 ultimos bits al principio del segundo octeto
@@ -50,16 +44,11 @@ void encode(char input[3], int len){
 
         // Agarro los 2 ultimos bits del segundo octeto y los desplazo
         output[2] = BASE64[(input[1] & MASK2BITS) << 2];
-        output[3] = '=';
     }else{
-        output[0] = BASE64[input[0] >> 2];
         // Agarro los 2 ultimos bits del primer octeto
         output[1] = BASE64[(input[0] & MASK2BITS) << 4];
         output[2] = '=';
-        output[3] = '=';
     }
-
-    printf("%s", output);
 }
 
 int base64Position(char code){
@@ -73,9 +62,7 @@ int base64Position(char code){
     return position;
 }
 
-void decode(char input[4]){
-
-    char output[3] = {0,0,0};
+void decode(char input[4], char* output){
 
     int letter1 = base64Position(input[0]); 
     int letter2 = base64Position(input[1]); 
@@ -90,21 +77,16 @@ void decode(char input[4]){
     if(letter4 != -1){
         output[2] =  ((letter3 & MASK2BITS) << 6) | letter4;
     }
-
-    printf("%s", output);
 }
 
 void operate(bool encod){
-
     char buff[encod?3:4];
-    int len;
+    char output[encod?4:3];
 
+    int len;
     while((len = read(STDIN_FILENO, &buff, encod?3:4))){
-        if(encod){
-            encode(buff, len);
-        }else{
-            decode(buff);
-        }
+        encod? encode(buff,output, len) : decode(buff, output);
+	    write(STDOUT_FILENO,&output,encod?4:3);
     }
 }
 
@@ -120,7 +102,7 @@ void helpOptions(){
 
 int main(int argc, char* argv[]){
 
-    if(argc < 2){
+    if(argc < 1){
         perror("\033[1;31mSyntax error\033[0m: write ./base64 -h for more help\n");
         return -1;
     }
