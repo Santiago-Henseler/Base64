@@ -102,7 +102,7 @@ void helpOptions(){
 
 int main(int argc, char* argv[]){
 
-    if(argc < 1){
+    if(argc < 2){
         perror("\033[1;31mSyntax error\033[0m: write ./base64 -h for more help\n");
         return -1;
     }
