@@ -14,6 +14,22 @@ int buf_in;
 char buf_out[4];
 
 void toBase64(int len) {
+    char* dir = &buf_in;
+    char ori0 = *(dir + 0);
+    char ori1 = *(dir + 1);
+    char ori2 = *(dir + 2);
+    char ori3 = *(dir + 3);
+
+    int index0 = ( buf_in & MASK1 ) >> 18;
+    int index1 = ( buf_in & MASK2 ) >> 12;
+    int index2 = ( buf_in & MASK3 ) >>  6;
+    int index3 = ( buf_in & MASK4 );
+
+	char char_0 = BASE64[ ( buf_in & MASK1 ) >> 18 ];
+	char char_1 = BASE64[ ( buf_in & MASK2 ) >> 12 ];
+	char char_2 = (len > 1)? BASE64[ ( buf_in & MASK3 ) >>  6 ]: '='; 
+	char char_3 = (len > 2)? BASE64[ ( buf_in & MASK4 )       ]: '=';
+
 	buf_out[0] = BASE64[ ( buf_in & MASK1 ) >> 18 ];
 	buf_out[1] = BASE64[ ( buf_in & MASK2 ) >> 12 ];
 	buf_out[2] = (len > 1)? BASE64[ ( buf_in & MASK3 ) >>  6 ]: '='; 
