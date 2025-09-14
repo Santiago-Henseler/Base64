@@ -6,9 +6,7 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#define MASK2BITS 0x03 // 00000011
-#define MASK4BITS 0x0F // 00001111
-#define MASK6BITS 0x3F // 00111111
+#include "base64.h"
 
 const char BASE64[64] = {
     'A','B','C','D','E','F','G','H',
