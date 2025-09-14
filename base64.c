@@ -39,7 +39,8 @@ void encode(char input[3], char* output, int len){
     }else if(len == 2){
         // Agarro los 2 ultimos bits del primer octeto
         char lastBits = (input[0] & MASK2BITS) << 6; 
-        // Agrego los 2 ultimos bits al principio del segundo octeto
+
+        // Agrego los 2 primeros bits al principio del segundo octeto
         char arg = ((input[1] >> 2) | lastBits); 
         output[1] = BASE64[arg >> 2];
 
