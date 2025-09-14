@@ -121,7 +121,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
-    bool encode = false;
+    bool encode = true;
     int fd;
 
     while ((opt = getopt_long(argc, argv, "edhi:o:v", long_options, &option_index)) != -1) {
