@@ -27,25 +27,26 @@ void encode(char input[3], char* output, int len){
     
     if(len == 3){
         // Agarro los 2 ultimos bits del primer octeto
-        char lastBits1 = (input[0] & MASK2BITS) << 6; 
+        char lastBits1 = (input[0] & MASK2BITS) << 4; 
         // Agrego los 2 ultimos bits al principio del segundo octeto
-        char arg1 = ((input[1] >> 2) | lastBits1); 
-        output[1] = BASE64[arg1 >> 2];
+        int arg1 = ((input[1] >> 4) | lastBits1); 
+        output[1] = BASE64[arg1];
+
         // Agarro los 4 ultimos bits del segundo octeto
-        char lastBits2 = (input[1] & MASK4BITS) << 4; 
+        char lastBits2 = (input[1] & MASK4BITS) << 2; 
         // Agrego los 4 ultimos bits al principio del tercer octeto
-        char arg2 = ((input[2] >> 4) | lastBits2); 
-        output[2] = BASE64[arg2 >> 2];
+        int arg2 = ((input[2] >> 6) | lastBits2); 
+        output[2] = BASE64[arg2];
     }else if(len == 2){
         // Agarro los 2 ultimos bits del primer octeto
-        char lastBits = (input[0] & MASK2BITS) << 6; 
+        char lastBits = (input[0] & MASK2BITS) << 4; 
 
         // Agrego los 2 primeros bits al principio del segundo octeto
-        char arg = ((input[1] >> 2) | lastBits); 
-        output[1] = BASE64[arg >> 2];
+        int arg = ((input[1] >> 4) | lastBits); 
+        output[1] = BASE64[arg];
 
         // Agarro los 2 ultimos bits del segundo octeto y los desplazo
-        output[2] = BASE64[(input[1] & MASK2BITS) << 2];
+        output[2] = BASE64[(input[1] & MASK4BITS) << 2];
     }else{
         // Agarro los 2 ultimos bits del primer octeto
         output[1] = BASE64[(input[0] & MASK2BITS) << 4];
@@ -82,14 +83,17 @@ void decode(char input[4], char* output){
 }
 
 void operate(bool encod){
+
     char buff[encod?3:4];
     char output[encod?4:3];
 
     int len;
     while((len = read(STDIN_FILENO, &buff, encod?3:4))){
+        encode(buff,output, len);
         encod? encode(buff,output, len) : decode(buff, output);
 	    write(STDOUT_FILENO,&output,encod?4:3);
     }
+    printf("\n");
 }
 
 void helpOptions(){
