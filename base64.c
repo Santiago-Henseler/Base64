@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #define MASK2BITS 0x03 // 00000011
 #define MASK4BITS 0x0F // 00001111
@@ -101,42 +102,70 @@ void helpOptions(){
 }
 
 int main(int argc, char* argv[]){
+    
+    int opt;
+    int option_index = 0;
 
-    if(argc < 2){
-        perror("\033[1;31mSyntax error\033[0m: write ./base64 -h for more help\n");
+    static struct option long_options[] = {
+        {"encode", no_argument, 0, 'e'},
+        {"decode", no_argument, 0, 'd'},
+        {"help",   no_argument, 0, 'h'},
+        {"input file",   required_argument, 0, 'i'},
+        {"output file",   required_argument, 0, 'o'},
+        {"version",   no_argument, 0, 'v'},
+        {0,        0,           0,  0 }
+    };
+
+    if (argc < 2) {
+        helpOptions();
         return -1;
     }
 
-    bool encode = true;
+    bool encode = false;
+    int fd;
 
-    for(int i = 1; i < argc; i++){
-        if(strcmp(argv[i], "-h") == 0){
-            helpOptions();
-            return 0;
-        }
-        if(strcmp(argv[i], "-e") == 0){
-            encode = true;
-        }
-        if(strcmp(argv[i], "-d") == 0){
-            encode = false;
-        }
-        if(strcmp(argv[i], "-i") == 0){
-            if(argc < i+1){
-                perror("\033[1;31mSyntax error\033[0m: the file name is not indicated\n");
+    while ((opt = getopt_long(argc, argv, "edhi:o:v", long_options, &option_index)) != -1) {
+        switch (opt) {
+            case 'e':
+                encode = true;
+                break;
+            case 'd':
+                encode = false; 
+                break;
+            case 'o':
+                fd = open(optarg, O_CREAT | O_WRONLY, 0644);
+                if(fd < 0){
+                    printf("%s", optarg);
+                    return -1;
+                }
+                if(dup2(fd, STDOUT_FILENO) < 0){
+                    perror("");
+                    return -1;
+                }
+            break;
+            case 'i':
+                fd = open(optarg, O_RDONLY);
+                if(fd < 0){
+                    perror("");
+                    return -1;
+                }
+                if(dup2(fd, STDIN_FILENO) < 0){
+                    perror("");
+                    return -1;
+                }
+                break;
+            case 'v':
+                printf("Base64 verssion 1.0\n");
+                return 0;
+            case 'h':
+                helpOptions();
+                return 0;
+            default:
+                helpOptions();
                 return -1;
-            }
-            dup2(open(argv[i+1], O_RDONLY), STDIN_FILENO);
-        }
-        if(strcmp(argv[i], "-o") == 0){
-            if(argc < i+1){
-                perror("\033[1;31mSyntax error\033[0m: the file name is not indicated\n");
-                return -1;
-            }
-            
-            dup2(open(argv[i+1], O_CREAT | O_WRONLY, 0644), STDOUT_FILENO);
         }
     }
-
+    
     operate(encode);
 
     return 0;
