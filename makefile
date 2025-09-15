@@ -8,4 +8,7 @@ clean:
 normal: 
 	gcc $(CFLAGS) base64.c -o base64
 
+tests:
+	gcc $(CFLAGS) base64.c -o base64 
+	./tests.sh
 
