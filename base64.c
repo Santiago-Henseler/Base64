@@ -9,6 +9,9 @@
 #define MASK4BITS 0x0F // 00001111
 #define MASK6BITS 0x3F // 00111111
 
+#define ISPADDING 65
+#define PADDING '='
+
 const char BASE64[64] = {
     'A','B','C','D','E','F','G','H',
     'I','J','K','L','M','N','O','P',
@@ -21,8 +24,8 @@ const char BASE64[64] = {
 };
 
 void encode(char input[3], char* output, int len){
-    output[0] = BASE64[input[0] >> 2];                        // Elimino los ultimos 2 bits del primer octeto
-    output[3] = (len>2) ? BASE64[input[2] & MASK6BITS] : '='; // Elimino los primeros 2 bits del tercer octeto
+    output[0] = BASE64[input[0] >> 2];                            // Elimino los ultimos 2 bits del primer octeto
+    output[3] = (len>2) ? BASE64[input[2] & MASK6BITS] : PADDING; // Elimino los primeros 2 bits del tercer octeto
     
     if(len == 3){
         // Agarro los 2 ultimos bits del primer octeto
@@ -49,11 +52,15 @@ void encode(char input[3], char* output, int len){
     }else{
         // Agarro los 2 ultimos bits del primer octeto
         output[1] = BASE64[(input[0] & MASK2BITS) << 4];
-        output[2] = '=';
+        output[2] = PADDING;
     }
 }
 
 int base64Position(char code){
+
+    if(code == PADDING){
+        return ISPADDING;
+    }
 
     int position = -1;
     for (int i = 0; i < 64; i++){
@@ -72,12 +79,21 @@ void decode(char input[4], char* output){
     int letter4 = base64Position(input[3]); 
     
     output[0] = (letter1 << 2) | (letter2 >> 4);
-        
-    if(letter3 != -1){ 
-        output[1] = ((letter2 & MASK4BITS) << 4) | (letter3 >> 2);
+
+    if(letter3 == -1 || letter4 == -1){
+        perror("Invalid symbol in base64");
+        return;
     }
-    if(letter4 != -1){
+        
+    if(letter3 != ISPADDING){ 
+        output[1] = ((letter2 & MASK4BITS) << 4) | (letter3 >> 2);
+    }else{
+        output[1] = '\0';
+    }
+    if(letter4 != ISPADDING){
         output[2] =  ((letter3 & MASK2BITS) << 6) | letter4;
+    }else{
+         output[2] = '\0';
     }
 }
 
@@ -92,7 +108,6 @@ void operate(bool encod){
         encod? encode(buff,output, len) : decode(buff, output);
 	    write(STDOUT_FILENO,&output,encod?4:3);
     }
-    printf("\n");
 }
 
 void helpOptions(){
@@ -139,22 +154,22 @@ int main(int argc, char* argv[]){
             case 'o':
                 fd = open(optarg, O_CREAT | O_WRONLY, 0644);
                 if(fd < 0){
-                    printf("%s", optarg);
+                    perror("The file could not be opened");
                     return -1;
                 }
                 if(dup2(fd, STDOUT_FILENO) < 0){
-                    perror("");
+                    perror("Problem handling the file");
                     return -1;
                 }
             break;
             case 'i':
                 fd = open(optarg, O_RDONLY);
                 if(fd < 0){
-                    perror("");
+                    perror("The file could not be opened");
                     return -1;
                 }
                 if(dup2(fd, STDIN_FILENO) < 0){
-                    perror("");
+                    perror("Problem handling the file");
                     return -1;
                 }
                 break;
